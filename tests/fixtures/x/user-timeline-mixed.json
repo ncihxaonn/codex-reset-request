@@ -1,0 +1,271 @@
+{
+  "data": {
+    "user": {
+      "result": {
+        "timeline": {
+          "timeline": {
+            "instructions": [
+              {
+                "type": "TimelinePinEntry",
+                "entry": {
+                  "entryId": "tweet-110",
+                  "content": {
+                    "entryType": "TimelineTimelineItem",
+                    "itemContent": {
+                      "itemType": "TimelineTweet",
+                      "tweet_results": {
+                        "result": {
+                          "__typename": "Tweet",
+                          "rest_id": "110",
+                          "legacy": {
+                            "full_text": "Pinned",
+                            "created_at": "Fri Aug 28 09:00:00 +0000 2026",
+                            "conversation_id_str": "110"
+                          },
+                          "core": {
+                            "user_results": {
+                              "result": {
+                                "rest_id": "42",
+                                "legacy": { "screen_name": "thsottiaux", "name": "Tibo" }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "type": "TimelineAddEntries",
+                "entries": [
+                  {
+                    "entryId": "tweet-110-duplicate",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "110",
+                            "legacy": {
+                              "full_text": "Pinned",
+                              "created_at": "Fri Aug 28 09:00:00 +0000 2026",
+                              "conversation_id_str": "110"
+                            },
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "rest_id": "42",
+                                  "legacy": { "screen_name": "thsottiaux", "name": "Tibo" }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-109",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "109",
+                            "legacy": {
+                              "full_text": "RT @someone: original",
+                              "created_at": "Fri Aug 28 08:30:00 +0000 2026",
+                              "conversation_id_str": "109",
+                              "retweeted_status_result": {
+                                "result": { "__typename": "Tweet", "rest_id": "900" }
+                              }
+                            },
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "rest_id": "42",
+                                  "legacy": { "screen_name": "thsottiaux", "name": "Tibo" }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-108",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "108",
+                            "legacy": {
+                              "full_text": "A reply",
+                              "created_at": "Fri Aug 28 08:00:00 +0000 2026",
+                              "conversation_id_str": "108",
+                              "in_reply_to_status_id_str": "700"
+                            },
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "rest_id": "42",
+                                  "legacy": { "screen_name": "thsottiaux", "name": "Tibo" }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-107",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "107",
+                            "legacy": {
+                              "full_text": "Codex users can reply reset here",
+                              "created_at": "Fri Aug 28 07:30:00 +0000 2026",
+                              "conversation_id_str": "107"
+                            },
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "rest_id": "42",
+                                  "legacy": { "screen_name": "thsottiaux", "name": "Tibo" }
+                                }
+                              }
+                            },
+                            "quoted_status_result": {
+                              "result": {
+                                "__typename": "Tweet",
+                                "rest_id": "501",
+                                "legacy": {
+                                  "full_text": "Quoted",
+                                  "created_at": "Thu Aug 27 07:00:00 +0000 2026"
+                                },
+                                "core": {
+                                  "user_results": {
+                                    "result": {
+                                      "rest_id": "77",
+                                      "legacy": { "screen_name": "someone", "name": "Someone" }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-106",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "TweetWithVisibilityResults",
+                            "tweet": {
+                              "__typename": "Tweet",
+                              "rest_id": "106",
+                              "legacy": {
+                                "full_text": "Original wrapped post",
+                                "created_at": "Fri Aug 28 07:00:00 +0000 2026",
+                                "conversation_id_str": "106"
+                              },
+                              "core": {
+                                "user_results": {
+                                  "result": {
+                                    "rest_id": "42",
+                                    "legacy": { "screen_name": "thsottiaux", "name": "Tibo" }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-105",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "105",
+                            "legacy": {
+                              "full_text": "Old post",
+                              "created_at": "Mon Aug 17 07:00:00 +0000 2026",
+                              "conversation_id_str": "105"
+                            },
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "rest_id": "42",
+                                  "legacy": { "screen_name": "thsottiaux", "name": "Tibo" }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "entryId": "tweet-104",
+                    "content": {
+                      "entryType": "TimelineTimelineItem",
+                      "itemContent": {
+                        "itemType": "TimelineTweet",
+                        "tweet_results": {
+                          "result": {
+                            "__typename": "Tweet",
+                            "rest_id": "104",
+                            "legacy": {
+                              "full_text": "Wrong author",
+                              "created_at": "Fri Aug 28 06:30:00 +0000 2026",
+                              "conversation_id_str": "104"
+                            },
+                            "core": {
+                              "user_results": {
+                                "result": {
+                                  "rest_id": "88",
+                                  "legacy": { "screen_name": "other", "name": "Other" }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

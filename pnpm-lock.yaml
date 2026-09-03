@@ -23,6 +23,9 @@ importers:
       x-client-transaction-id:
         specifier: ^0.3.1
         version: 0.3.1
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
     devDependencies:
       '@biomejs/biome':
         specifier: ^2.3.10
@@ -1082,6 +1085,9 @@ packages:
   x-client-transaction-id@0.3.1:
     resolution: {integrity: sha512-fD9YtDswTL3VyG/z7FbZUfMu5CUsvGmKk33fM3b9eOXe0Wnmj8W55UKLPA5Z/cuq6WrWTxXQhLcV3GGCD6mKaQ==}
 
+  zod@4.4.3:
+    resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
+
 snapshots:
 
   '@babel/helper-string-parser@7.29.7': {}
@@ -1862,3 +1868,5 @@ snapshots:
       linkedom: 0.18.13
     transitivePeerDependencies:
       - canvas
+
+  zod@4.4.3: {}

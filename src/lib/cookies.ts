@@ -233,3 +233,50 @@ export async function resolveCredentials(options: {
 
   return { cookies, warnings };
 }
+
+/**
+ * Resolve credentials for local automation without accepting token arguments.
+ * Browser state is intentionally preferred; environment variables are a final
+ * compatibility fallback and values are never persisted by this function.
+ */
+export async function resolveBrowserFirstCredentials(options: {
+  cookieSource?: CookieSource | 'auto';
+  chromeProfile?: string;
+  firefoxProfile?: string;
+  cookieTimeoutMs?: number;
+}): Promise<CookieExtractionResult> {
+  const warnings: string[] = [];
+  const sources = options.cookieSource && options.cookieSource !== 'auto' ? [options.cookieSource] : resolveSources();
+  const cookieTimeoutMs =
+    typeof options.cookieTimeoutMs === 'number' &&
+    Number.isFinite(options.cookieTimeoutMs) &&
+    options.cookieTimeoutMs > 0
+      ? options.cookieTimeoutMs
+      : process.platform === 'darwin'
+        ? DEFAULT_COOKIE_TIMEOUT_MS
+        : undefined;
+
+  for (const source of sources) {
+    const result = await readTwitterCookiesFromBrowser({
+      source,
+      chromeProfile: options.chromeProfile,
+      firefoxProfile: options.firefoxProfile,
+      cookieTimeoutMs,
+    });
+    warnings.push(...result.warnings);
+    if (result.cookies.authToken && result.cookies.ct0) {
+      return { cookies: result.cookies, warnings };
+    }
+  }
+
+  const environmentCookies = buildEmpty();
+  readEnvCookie(environmentCookies, ['AUTH_TOKEN', 'TWITTER_AUTH_TOKEN'], 'authToken');
+  readEnvCookie(environmentCookies, ['CT0', 'TWITTER_CT0'], 'ct0');
+  if (environmentCookies.authToken && environmentCookies.ct0) {
+    environmentCookies.cookieHeader = cookieHeader(environmentCookies.authToken, environmentCookies.ct0);
+    return { cookies: environmentCookies, warnings };
+  }
+
+  warnings.push('No complete X browser session or environment credential pair was available.');
+  return { cookies: environmentCookies, warnings };
+}

@@ -1,7 +1,7 @@
 import type { AbstractConstructor, Mixin, TwitterClientBase } from './twitter-client-base.js';
 import { TWITTER_API_BASE } from './twitter-client-constants.js';
 import { buildUserTweetsFeatures } from './twitter-client-features.js';
-import type { GraphqlTweetResult, SearchResult, TweetData } from './twitter-client-types.js';
+import type { SearchResult, TimelineInstruction, TweetData } from './twitter-client-types.js';
 import { extractCursorFromInstructions, parseTweetsFromInstructions } from './twitter-client-utils.js';
 
 /** Options for user tweets fetch methods */
@@ -121,48 +121,7 @@ export function withUserTweets<TBase extends AbstractConstructor<TwitterClientBa
                   result?: {
                     timeline?: {
                       timeline?: {
-                        instructions?: Array<{
-                          type?: string;
-                          entries?: Array<{
-                            content?: {
-                              itemContent?: {
-                                tweet_results?: {
-                                  result?: GraphqlTweetResult;
-                                };
-                              };
-                              item?: {
-                                itemContent?: {
-                                  tweet_results?: {
-                                    result?: GraphqlTweetResult;
-                                  };
-                                };
-                              };
-                              items?: Array<{
-                                item?: {
-                                  itemContent?: {
-                                    tweet_results?: {
-                                      result?: GraphqlTweetResult;
-                                    };
-                                  };
-                                };
-                                itemContent?: {
-                                  tweet_results?: {
-                                    result?: GraphqlTweetResult;
-                                  };
-                                };
-                                content?: {
-                                  itemContent?: {
-                                    tweet_results?: {
-                                      result?: GraphqlTweetResult;
-                                    };
-                                  };
-                                };
-                              }>;
-                              cursorType?: string;
-                              value?: string;
-                            };
-                          }>;
-                        }>;
+                        instructions?: TimelineInstruction[];
                       };
                     };
                   };

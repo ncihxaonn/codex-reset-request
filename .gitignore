@@ -1,4 +1,5 @@
 node_modules/
+.pnpm-store/
 dist/
 *.log
 .pnpm-debug.log*
@@ -16,6 +17,7 @@ twitter-cli.bin
 bird
 .env
 .*.bun-build
+.tmp/
 *.zip
 *.tar
 *.tar.gz

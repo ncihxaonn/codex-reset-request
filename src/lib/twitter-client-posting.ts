@@ -5,16 +5,89 @@ import {
   buildNoteTweetFieldToggles,
   buildTweetCreateFeatures,
 } from './twitter-client-features.js';
-import type { CreateTweetResponse, TweetResult } from './twitter-client-types.js';
+import type {
+  CreateTweetResponse,
+  TweetMutationAttemptOptions,
+  TweetMutationAttemptResult,
+  TweetMutationStartResult,
+  TweetResult,
+} from './twitter-client-types.js';
 
 export interface TwitterClientPostingMethods {
   tweet(text: string, mediaIds?: string[]): Promise<TweetResult>;
   reply(text: string, replyToTweetId: string, mediaIds?: string[]): Promise<TweetResult>;
+  replySingleAttempt(
+    text: string,
+    replyToTweetId: string,
+    options?: TweetMutationAttemptOptions,
+  ): Promise<TweetMutationAttemptResult>;
 }
 
 const STANDARD_TWEET_MAX_WEIGHTED_LENGTH = 280;
 const URL_WEIGHTED_LENGTH = 23;
 const URL_REGEX = /https?:\/\/\S+/g;
+const MAX_ONE_SHOT_RESPONSE_BYTES = 1 * 1_024 * 1_024;
+const DEFAULT_ONE_SHOT_BODY_TIMEOUT_MS = 10_000;
+
+class BoundedResponseBodyError extends Error {
+  readonly code: 'write-body-timeout' | 'write-response-too-large';
+
+  constructor(code: BoundedResponseBodyError['code']) {
+    super(code);
+    this.name = 'BoundedResponseBodyError';
+    this.code = code;
+  }
+}
+
+class MutationStartError extends Error {
+  readonly safeCode: string;
+
+  constructor(safeCode: string) {
+    super(safeCode);
+    this.name = 'MutationStartError';
+    this.safeCode = safeCode;
+  }
+}
+
+async function readBoundedResponseBody(
+  response: Response,
+  timeoutMs: number,
+  maximumBytes = MAX_ONE_SHOT_RESPONSE_BYTES,
+): Promise<string> {
+  if (!response.body) {
+    return '';
+  }
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let totalBytes = 0;
+  let output = '';
+  let timeout: NodeJS.Timeout | undefined;
+  const deadline = new Promise<never>((_resolve, reject) => {
+    timeout = setTimeout(() => {
+      reject(new BoundedResponseBodyError('write-body-timeout'));
+      void reader.cancel().catch(() => undefined);
+    }, timeoutMs);
+  });
+  void deadline.catch(() => undefined);
+  try {
+    while (true) {
+      const result = await Promise.race([reader.read(), deadline]);
+      if (result.done) {
+        return output + decoder.decode();
+      }
+      totalBytes += result.value.byteLength;
+      if (totalBytes > maximumBytes) {
+        await reader.cancel().catch(() => undefined);
+        throw new BoundedResponseBodyError('write-response-too-large');
+      }
+      output += decoder.decode(result.value, { stream: true });
+    }
+  } finally {
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+  }
+}
 
 /**
  * Approximate X's weighted tweet length: URLs count as 23 chars (t.co wrapping),
@@ -77,6 +150,130 @@ export function withPosting<TBase extends AbstractConstructor<TwitterClientBase>
 
       const operation = this.pickCreateOperation(text);
       return this.createTweet(variables, this.featuresFor(operation), operation, this.fieldTogglesFor(operation));
+    }
+
+    /**
+     * Automation-safe reply primitive. Query discovery may happen before the
+     * write, but this method performs exactly one CreateTweet mutation request
+     * and never switches endpoints or retries an ambiguous outcome.
+     */
+    async replySingleAttempt(
+      text: string,
+      replyToTweetId: string,
+      options: TweetMutationAttemptOptions = {},
+    ): Promise<TweetMutationAttemptResult> {
+      if (!text || !/^\d+$/.test(replyToTweetId)) {
+        return { status: 'definitive-failure', safeCode: 'invalid-write-input' };
+      }
+
+      let queryId: string;
+      try {
+        queryId = await this.getQueryId('CreateTweet');
+        await this.ensureClientUserId();
+      } catch {
+        return { status: 'definitive-failure', safeCode: 'write-preflight-failed' };
+      }
+
+      const variables = {
+        tweet_text: text,
+        reply: {
+          in_reply_to_tweet_id: replyToTweetId,
+          exclude_reply_user_ids: [],
+        },
+        dark_request: false,
+        media: {
+          media_entities: [],
+          possibly_sensitive: false,
+        },
+        semantic_annotation_ids: [],
+      };
+      const url = `${TWITTER_API_BASE}/${queryId}/CreateTweet`;
+      const body = JSON.stringify({ variables, features: buildTweetCreateFeatures(), queryId });
+
+      let response: Response;
+      try {
+        response = await this.fetchWithTimeout(
+          url,
+          {
+            method: 'POST',
+            redirect: 'manual',
+            headers: { ...this.getHeaders(), referer: 'https://x.com/compose/post' },
+            body,
+          },
+          async () => {
+            let startResult: TweetMutationStartResult | undefined;
+            try {
+              startResult = await options.onMutationStart?.();
+            } catch {
+              throw new MutationStartError('write-state-persistence-failed');
+            }
+            if (startResult && !startResult.ok) {
+              throw new MutationStartError(
+                /^[a-z0-9-]{1,100}$/.test(startResult.safeCode)
+                  ? startResult.safeCode
+                  : 'write-start-rejected',
+              );
+            }
+          },
+        );
+      } catch (error) {
+        if (error instanceof MutationStartError) {
+          return { status: 'definitive-failure', safeCode: error.safeCode };
+        }
+        return { status: 'unknown', safeCode: 'write-transport-ambiguous' };
+      }
+
+      if (response.status >= 500) {
+        return { status: 'unknown', safeCode: 'write-server-ambiguous', httpStatus: response.status };
+      }
+      if (response.status >= 300 && response.status < 400) {
+        return { status: 'unknown', safeCode: 'write-redirect-ambiguous', httpStatus: response.status };
+      }
+      if (!response.ok) {
+        return {
+          status: 'definitive-failure',
+          safeCode: response.status === 404 ? 'write-query-rejected' : 'write-http-rejected',
+          httpStatus: response.status,
+        };
+      }
+
+      let data: CreateTweetResponse;
+      try {
+        const responseBody = await readBoundedResponseBody(
+          response,
+          this.timeoutMs && this.timeoutMs > 0 ? this.timeoutMs : DEFAULT_ONE_SHOT_BODY_TIMEOUT_MS,
+        );
+        data = JSON.parse(responseBody) as CreateTweetResponse;
+      } catch (error) {
+        if (error instanceof BoundedResponseBodyError) {
+          return { status: 'unknown', safeCode: error.code, httpStatus: response.status };
+        }
+        return { status: 'unknown', safeCode: 'write-response-unparseable', httpStatus: response.status };
+      }
+      const result = data.data?.create_tweet?.tweet_results?.result;
+      const tweetId = result?.rest_id ?? result?.tweet?.rest_id;
+      if (tweetId && /^\d+$/.test(tweetId)) {
+        return { status: 'sent', tweetId };
+      }
+      if (data.errors && data.errors.length > 0) {
+        const definitiveCodes = new Set([
+          32, 34, 64, 88, 89, 99, 135, 144, 179, 185, 186, 187, 215, 220, 226, 261, 326, 385,
+          386,
+        ]);
+        const definitive = data.errors.some(
+          (error) => typeof error.code === 'number' && definitiveCodes.has(error.code),
+        );
+        return {
+          status: definitive ? 'definitive-failure' : 'unknown',
+          safeCode: data.errors.some((error) => error.code === 226)
+            ? 'write-automation-restricted'
+            : definitive
+              ? 'write-graphql-rejected'
+              : 'write-graphql-ambiguous',
+          httpStatus: response.status,
+        };
+      }
+      return { status: 'unknown', safeCode: 'write-id-missing', httpStatus: response.status };
     }
 
     private pickCreateOperation(text: string): 'CreateTweet' | 'CreateNoteTweet' {

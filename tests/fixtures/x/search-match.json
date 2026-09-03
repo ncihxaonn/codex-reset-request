@@ -1,0 +1,15 @@
+{
+  "tweets": [
+    {
+      "id": "107",
+      "text": "Codex users can reply reset here",
+      "author": { "username": "thsottiaux", "name": "Tibo" },
+      "authorId": "42",
+      "createdAt": "2026-08-28T07:30:00.000Z",
+      "isPinned": false,
+      "isRetweet": false,
+      "isReply": false,
+      "isQuote": true
+    }
+  ]
+}

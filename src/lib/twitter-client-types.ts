@@ -34,6 +34,9 @@ export type GraphqlTweetResult = {
     favorite_count?: number;
     conversation_id_str?: string;
     in_reply_to_status_id_str?: string | null;
+    retweeted_status_result?: {
+      result?: GraphqlTweetResult;
+    };
     entities?: {
       media?: GraphqlMediaEntity[];
     };
@@ -206,6 +209,9 @@ export type GraphqlTweetResult = {
     }>;
   };
   tweet?: GraphqlTweetResult;
+  retweeted_status_result?: {
+    result?: GraphqlTweetResult;
+  };
   quoted_status_result?: {
     result?: GraphqlTweetResult;
   };
@@ -220,6 +226,19 @@ export type TweetResult =
       success: false;
       error: string;
     };
+
+export type TweetMutationAttemptResult =
+  | { status: 'sent'; tweetId: string }
+  | { status: 'definitive-failure'; safeCode: string; httpStatus?: number }
+  | { status: 'unknown'; safeCode: string; httpStatus?: number };
+
+export interface TweetMutationAttemptOptions {
+  onMutationStart?(): Promise<TweetMutationStartResult>;
+}
+
+export type TweetMutationStartResult =
+  | { ok: true }
+  | { ok: false; safeCode: string };
 
 export type BookmarkMutationResult =
   | {
@@ -273,6 +292,15 @@ export interface TweetData {
   likeCount?: number;
   conversationId?: string;
   inReplyToStatusId?: string;
+  sourceEntryId?: string;
+  sourceInstructionType?: string;
+  sourceEntryType?: string;
+  tweetResultTypename?: string;
+  tweetWrapperTypename?: string;
+  isPinned?: boolean | null;
+  isRetweet?: boolean | null;
+  isReply?: boolean;
+  isQuote?: boolean;
   // Optional quoted tweet; depth controlled by quoteDepth (default: 1).
   quotedTweet?: TweetData;
   // Media attachments (photos, videos, GIFs)
@@ -284,6 +312,37 @@ export interface TweetData {
   };
   // Raw GraphQL tweet result (only when includeRaw is enabled)
   _raw?: GraphqlTweetResult;
+}
+
+export interface TimelineItemContent {
+  itemType?: string;
+  tweet_results?: {
+    result?: GraphqlTweetResult;
+  };
+}
+
+export interface TimelineEntry {
+  entryId?: string;
+  content?: {
+    entryType?: string;
+    itemContent?: TimelineItemContent;
+    item?: {
+      itemContent?: TimelineItemContent;
+    };
+    items?: Array<{
+      item?: { itemContent?: TimelineItemContent };
+      itemContent?: TimelineItemContent;
+      content?: { itemContent?: TimelineItemContent };
+    }>;
+    cursorType?: string;
+    value?: string;
+  };
+}
+
+export interface TimelineInstruction {
+  type?: string;
+  entry?: TimelineEntry;
+  entries?: TimelineEntry[];
 }
 
 export interface TweetWithMeta extends TweetData {
@@ -393,6 +452,9 @@ export interface CreateTweetResponse {
       tweet_results?: {
         result?: {
           rest_id?: string;
+          tweet?: {
+            rest_id?: string;
+          };
           legacy?: {
             full_text?: string;
           };
