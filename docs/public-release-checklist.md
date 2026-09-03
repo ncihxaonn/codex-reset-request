@@ -20,9 +20,9 @@ permitted by X.
 
 ## Repository and attribution
 
-- [ ] Public GitHub fork exists and GitHub reports parent
+- [x] Public GitHub fork exists and GitHub reports parent
   `0xEnc0der/bird-x-cli`.
-- [ ] `origin` points to the public fork; `upstream` points to the primary
+- [x] `origin` points to the public fork; `upstream` points to the primary
   upstream.
 - [x] Published history contains the upstream Bird history plus only
       personal-author derivative commits; earlier company-identity commits are
@@ -66,10 +66,10 @@ permitted by X.
 
 ## Hosted checks
 
-- [ ] CI passes on macOS, Ubuntu, and Windows with Node 22 and required native
+- [x] CI passes on macOS, Ubuntu, and Windows with Node 22 and required native
   watcher tests.
-- [ ] CodeQL passes.
-- [ ] secret/polling/attribution verifiers pass in GitHub Actions.
+- [x] CodeQL passes.
+- [x] secret/polling/attribution verifiers pass in GitHub Actions.
 - [ ] Dependabot configuration is active.
 - [ ] Branch protection/review settings are considered after the fork exists.
 - [ ] GitHub private vulnerability reporting is enabled and available as the
