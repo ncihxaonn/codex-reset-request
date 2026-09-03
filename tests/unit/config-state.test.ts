@@ -94,6 +94,16 @@ describe('configuration', () => {
     }
   });
 
+  it('refuses to load configuration through a symbolic link', async () => {
+    const home = await temporaryHome();
+    await ensureAppDirectories(home.paths);
+    const outside = `${home.root}/outside-config.json`;
+    await writeFile(outside, JSON.stringify(createDefaultConfig()), 'utf8');
+    await symlink(outside, home.paths.configFile);
+
+    await expect(loadConfig(home.paths)).rejects.toThrow(/invalid local data file/i);
+  });
+
   it('migrates legacy notify configuration to dry-run without local notification settings', async () => {
     const home = await temporaryHome();
     await ensureAppDirectories(home.paths);

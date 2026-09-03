@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { constants } from 'node:fs';
-import { access, chmod, lstat, mkdir, open, readFile, rename, unlink } from 'node:fs/promises';
+import { chmod, lstat, mkdir, open, rename, unlink } from 'node:fs/promises';
 import path from 'node:path';
 
 export const MAX_JSON_FILE_BYTES = 4 * 1024 * 1024;
@@ -85,18 +85,30 @@ export async function writeJsonAtomic(filePath: string, value: unknown): Promise
 }
 
 export async function readJsonFile(filePath: string): Promise<unknown | null> {
-  await rejectSymlink(filePath);
+  let handle: Awaited<ReturnType<typeof open>> | null = null;
   try {
-    await access(filePath, constants.R_OK);
-    const stats = await lstat(filePath);
-    if (!stats.isFile() || stats.size > MAX_JSON_FILE_BYTES) {
+    const noFollow = process.platform === 'win32' ? 0 : constants.O_NOFOLLOW;
+    handle = await open(filePath, constants.O_RDONLY | noFollow);
+    const [openedStats, pathStats] = await Promise.all([handle.stat(), lstat(filePath)]);
+    if (
+      pathStats.isSymbolicLink() ||
+      !openedStats.isFile() ||
+      openedStats.dev !== pathStats.dev ||
+      openedStats.ino !== pathStats.ino ||
+      openedStats.size > MAX_JSON_FILE_BYTES
+    ) {
       throw new Error(`Invalid local data file: ${path.basename(filePath)}`);
     }
-    return JSON.parse(await readFile(filePath, 'utf8')) as unknown;
+    return JSON.parse(await handle.readFile('utf8')) as unknown;
   } catch (error) {
     if (isMissing(error)) {
       return null;
     }
+    if ((error as NodeJS.ErrnoException | undefined)?.code === 'ELOOP') {
+      throw new Error(`Invalid local data file: ${path.basename(filePath)}`);
+    }
     throw error;
+  } finally {
+    await handle?.close().catch(() => undefined);
   }
 }

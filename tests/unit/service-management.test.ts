@@ -89,7 +89,7 @@ describe('service definitions', () => {
     expect(definition).toContain('<key>CRR_CONFIG_DIR</key>');
     expect(definition).toContain('<key>CRR_CODEX_HOME</key>');
     expect(definition).toContain('/Users/A &amp; B/.codex');
-    expect(definition).toContain(paths.stateDir.replace('&', '&amp;'));
+    expect(definition).toContain(paths.stateDir.replaceAll('&', '&amp;'));
     expect(definition).not.toMatch(/StartInterval|CalendarInterval|pnpm|npm|shell/i);
   });
 

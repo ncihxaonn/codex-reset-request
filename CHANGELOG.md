@@ -28,6 +28,9 @@
 - an ambiguous write is persisted as `unknown` and is never retried;
 - the retained Bird credential check reports presence only and no longer prints
   token prefixes.
+- JSON and release-scan reads use opened file handles with identity checks to
+  prevent path-swap races.
+- raw X news responses are no longer written to a debug file.
 
 ## Upstream Bird history (retained for provenance)
 

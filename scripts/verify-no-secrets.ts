@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process';
-import { lstat, readFile, readdir } from 'node:fs/promises';
+import { constants } from 'node:fs';
+import { lstat, open, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -96,19 +97,44 @@ async function scanWorkingTree(): Promise<Finding[]> {
   const findings: Finding[] = [];
   for (const filePath of await workingTreeFiles()) {
     const file = relativePath(filePath);
-    const stats = await lstat(filePath);
-    if (stats.isSymbolicLink()) {
-      findings.push({ file, line: 1, code: 'symlink-unscanned' });
-      continue;
-    }
     const pathCode = sensitivePathCode(file);
     if (pathCode) findings.push({ file, line: 1, code: pathCode });
-    if (stats.size > maximumTextBytes) {
-      findings.push({ file, line: 1, code: 'oversize-file-unscanned' });
-      continue;
+    let handle: Awaited<ReturnType<typeof open>> | null = null;
+    try {
+      const noFollow = process.platform === 'win32' ? 0 : constants.O_NOFOLLOW;
+      handle = await open(filePath, constants.O_RDONLY | noFollow);
+      const [openedStats, pathStats] = await Promise.all([handle.stat(), lstat(filePath)]);
+      if (pathStats.isSymbolicLink()) {
+        findings.push({ file, line: 1, code: 'symlink-unscanned' });
+        continue;
+      }
+      if (
+        !openedStats.isFile() ||
+        openedStats.dev !== pathStats.dev ||
+        openedStats.ino !== pathStats.ino
+      ) {
+        findings.push({ file, line: 1, code: 'file-changed-during-scan' });
+        continue;
+      }
+      if (openedStats.size > maximumTextBytes) {
+        findings.push({ file, line: 1, code: 'oversize-file-unscanned' });
+        continue;
+      }
+      findings.push(...scanSecretPayload(file, await handle.readFile()));
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException | undefined)?.code;
+      if (code === 'ELOOP') {
+        findings.push({ file, line: 1, code: 'symlink-unscanned' });
+        continue;
+      }
+      if (code === 'ENOENT') {
+        findings.push({ file, line: 1, code: 'file-changed-during-scan' });
+        continue;
+      }
+      throw error;
+    } finally {
+      await handle?.close().catch(() => undefined);
     }
-    const bytes = await readFile(filePath);
-    findings.push(...scanSecretPayload(file, bytes));
   }
   return findings;
 }
