@@ -31,6 +31,9 @@
 - JSON and release-scan reads use opened file handles with identity checks to
   prevent path-swap races.
 - raw X news responses are no longer written to a debug file.
+- browser cookies are accepted only from exact X/Twitter domains or their
+  subdomains; lookalike suffixes are rejected.
+- Git worktree metadata is read through a stable, non-symlink file descriptor.
 
 ## Upstream Bird history (retained for provenance)
 

@@ -207,6 +207,26 @@ describe('Bird credential resolution baseline', () => {
     expect(getCookiesMock.mock.calls.map(([input]) => input.browsers)).toEqual([['safari'], ['chrome']]);
   });
 
+  it('rejects lookalike cookie domains and accepts exact X domains', async () => {
+    getCookiesMock.mockResolvedValue({
+      cookies: [
+        { name: 'auth_token', value: 'lookalike-auth', domain: 'notx.com' },
+        { name: 'ct0', value: 'lookalike-ct0', domain: 'eviltwitter.com' },
+        { name: 'auth_token', value: 'browser-auth', domain: '.x.com' },
+        { name: 'ct0', value: 'browser-ct0', domain: 'api.x.com' },
+      ],
+      warnings: [],
+    });
+
+    const result = await resolveCredentials({ cookieSource: 'chrome' });
+
+    expect(result.cookies).toMatchObject({
+      authToken: 'browser-auth',
+      ct0: 'browser-ct0',
+      source: 'Chrome default profile',
+    });
+  });
+
   it('documents the upstream environment-before-browser priority', async () => {
     process.env.AUTH_TOKEN = 'env-auth';
     process.env.CT0 = 'env-ct0';

@@ -149,15 +149,26 @@ export function resolveGitSha(importMetaUrl?: string): string | null {
   let dir = resolveStartDir(importMetaUrl);
   for (let i = 0; i < 10; i += 1) {
     const dotGit = path.join(dir, '.git');
+    let descriptor: number | null = null;
     try {
-      const stat = fs.statSync(dotGit);
-      if (stat.isDirectory()) {
+      const noFollow = process.platform === 'win32' ? 0 : fs.constants.O_NOFOLLOW;
+      descriptor = fs.openSync(dotGit, fs.constants.O_RDONLY | noFollow);
+      const openedStats = fs.fstatSync(descriptor);
+      const pathStats = fs.lstatSync(dotGit);
+      if (
+        pathStats.isSymbolicLink() ||
+        openedStats.dev !== pathStats.dev ||
+        openedStats.ino !== pathStats.ino
+      ) {
+        throw new Error('Unstable Git metadata path');
+      }
+      if (openedStats.isDirectory()) {
         const sha = resolveGitShaFromGitDir(dotGit);
         if (sha) {
           return sha;
         }
-      } else if (stat.isFile()) {
-        const txt = fs.readFileSync(dotGit, 'utf8');
+      } else if (openedStats.isFile()) {
+        const txt = fs.readFileSync(descriptor, 'utf8');
         const match = GITDIR_REGEX.exec(txt);
         const gitDir = match?.[1]?.trim();
         if (gitDir) {
@@ -170,6 +181,10 @@ export function resolveGitSha(importMetaUrl?: string): string | null {
       }
     } catch {
       // ignore
+    } finally {
+      if (descriptor !== null) {
+        fs.closeSync(descriptor);
+      }
     }
 
     const parent = path.dirname(dir);
