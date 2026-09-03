@@ -81,17 +81,26 @@ function pickCookieValue(
   cookies: Array<{ name?: string; value?: string; domain?: string }>,
   name: (typeof TWITTER_COOKIE_NAMES)[number],
 ): string | null {
-  const matches = cookies.filter((c) => c?.name === name && typeof c.value === 'string');
+  const matchesDomain = (domain: string | undefined, expected: string): boolean => {
+    const normalized = (domain ?? '').trim().toLowerCase().replace(/^\./, '');
+    return normalized === expected || normalized.endsWith(`.${expected}`);
+  };
+  const matches = cookies.filter(
+    (cookie) =>
+      cookie?.name === name &&
+      typeof cookie.value === 'string' &&
+      (matchesDomain(cookie.domain, 'x.com') || matchesDomain(cookie.domain, 'twitter.com')),
+  );
   if (matches.length === 0) {
     return null;
   }
 
-  const preferred = matches.find((c) => (c.domain ?? '').endsWith('x.com'));
+  const preferred = matches.find((cookie) => matchesDomain(cookie.domain, 'x.com'));
   if (preferred?.value) {
     return preferred.value;
   }
 
-  const twitter = matches.find((c) => (c.domain ?? '').endsWith('twitter.com'));
+  const twitter = matches.find((cookie) => matchesDomain(cookie.domain, 'twitter.com'));
   if (twitter?.value) {
     return twitter.value;
   }
