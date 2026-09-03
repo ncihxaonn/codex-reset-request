@@ -1,8 +1,9 @@
-# Codex Reset Request
+# Codex Reset Request — Codex Usage Limits Monitor
 
-An event-driven local tool that detects a Codex usage-limit event and can
-optionally submit the text `reset` as one reply through Bird using the user's
-existing authenticated X browser session.
+An event-driven local Codex usage limits monitor. It detects a confirmed Codex
+usage-limit or rate-limit event and can optionally submit one customizable
+reset request through Bird using the user's existing authenticated X browser
+session.
 
 - No polling
 - No X API key
@@ -13,11 +14,12 @@ existing authenticated X browser session.
 This tool does not reset your Codex account and does not guarantee that anyone
 will provide a reset.
 
-> **Development alpha — not approved for public release or live automatic
-> posting.** X's current Automation Rules prohibit scripting the X website;
-> this Bird-derived build uses undocumented web GraphQL rather than the official
-> X API. Read [DISCLAIMER.md](DISCLAIMER.md) and the unchecked
-> [release blockers](docs/public-release-checklist.md#blocking-policy-and-identity-checks).
+> **Public development alpha — source available for review, not an endorsement
+> of live automatic posting.** X's current Automation Rules prohibit scripting
+> the X website; this Bird-derived build uses undocumented web GraphQL rather
+> than the official X API. Keep `dry-run` mode unless you have independently
+> resolved the live-operation requirements in [DISCLAIMER.md](DISCLAIMER.md)
+> and the [release checklist](docs/public-release-checklist.md#live-operation-policy-blockers).
 
 [简体中文](README.zh-CN.md)
 
@@ -343,11 +345,12 @@ Codex subprocess that relies on the existing Codex login. See
 No local OS notifications are sent; status stays in the CLI, state, and
 redacted local logs.
 
-Bird uses undocumented X web GraphQL endpoints. X's current
+Bird uses undocumented X web GraphQL endpoints. Publishing the source does not
+make live automation permissible. X's current
 [Automation Rules](https://help.x.com/en/rules-and-policies/x-automation)
 prohibit non-API scripting of the X website, so this implementation is not
-eligible for public release or live automatic use as written. A disclaimer
-does not cure that conflict. Read the complete [disclaimer](DISCLAIMER.md).
+suitable for live automatic use as written. A disclaimer does not cure that
+conflict. Read the complete [disclaimer](DISCLAIMER.md).
 
 ## Uninstall and complete data removal
 

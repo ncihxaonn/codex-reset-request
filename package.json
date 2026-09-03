@@ -1,10 +1,30 @@
 {
   "name": "codex-reset-request",
   "version": "0.1.0-alpha.0",
-  "description": "Event-driven local Codex usage-limit detector with an optional Bird-powered X reset request action.",
+  "description": "Event-driven Codex usage limits and rate-limit monitor with an optional guarded Bird-powered X reset request.",
   "private": true,
   "type": "module",
   "license": "MIT",
+  "keywords": [
+    "codex",
+    "codex-cli",
+    "openai-codex",
+    "codex-usage-limits",
+    "codex-rate-limit",
+    "usage-limit-monitor",
+    "rate-limit-monitor",
+    "event-driven",
+    "bird",
+    "x-automation"
+  ],
+  "homepage": "https://github.com/ncihxaonn/codex-reset-request#readme",
+  "bugs": {
+    "url": "https://github.com/ncihxaonn/codex-reset-request/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ncihxaonn/codex-reset-request.git"
+  },
   "main": "dist/lib/index.js",
   "types": "dist/lib/index.d.ts",
   "bin": {

@@ -1,9 +1,9 @@
-# Public alpha candidate release checklist
+# Public source alpha release checklist
 
 This checklist records evidence rather than aspirations. Do not mark remote
 items complete from local results alone.
 
-## Blocking policy and identity checks
+## Live-operation policy blockers
 
 - [ ] Replace Bird's non-API X website scripting with an officially supported
       X API/OAuth integration. Current
@@ -14,11 +14,9 @@ items complete from local results alone.
 - [ ] Confirm the target account has expressly opted in to automated replies
       and provide the required easy opt-out path before any live third-party
       reply is enabled.
-- [ ] Publish only a clean personal-author history; do not expose earlier local
-      commits carrying a company Git identity.
-
-Do not create or push the public repository while any item in this section is
-unchecked.
+These unchecked items block live third-party automatic replies, not publication
+of source code for review. Public availability does not assert that live use is
+permitted by X.
 
 ## Repository and attribution
 
@@ -26,13 +24,17 @@ unchecked.
   `0xEnc0der/bird-x-cli`.
 - [ ] `origin` points to the public fork; `upstream` points to the primary
   upstream.
+- [x] Published history contains the upstream Bird history plus only
+      personal-author derivative commits; earlier company-identity commits are
+      excluded.
 - [x] Exact upstream base SHA/tag/version/date are recorded.
 - [x] MIT license, Bird history, third-party notices, and both binaries remain.
 - [x] Production dependency licenses are inventoried as MIT, ISC, or
       BSD-2-Clause; bundled redistributions must retain package notices. See
       the dated [dependency audit](dependency-audit.md).
-- [x] Package identity is `codex-reset-request@0.1.0-alpha.0`, private only to
-  prevent accidental npm publication.
+- [x] Package identity is `codex-reset-request@0.1.0-alpha.0`; `private: true`
+      prevents accidental npm publication and does not make the GitHub source
+      repository private.
 
 ## Product safety
 

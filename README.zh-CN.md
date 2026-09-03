@@ -1,7 +1,8 @@
-# Codex Reset Request
+# Codex Reset Request — Codex 用量限制监控工具
 
-一个事件驱动的本地工具：检测 Codex 用量限制事件，并可选择通过 Bird，
-使用用户现有的 X 浏览器登录会话发送一条内容为 `reset` 的回复。
+一个事件驱动的本地 Codex usage limits monitor：检测并确认 Codex 用量限制或
+rate limit 事件，并可选择通过 Bird，使用用户现有的 X 浏览器登录会话发送一条
+可自定义的 reset request。
 
 - 不轮询
 - 不需要 X Developer API key
@@ -11,10 +12,11 @@
 
 本工具不会重置你的 Codex 账号，也不保证任何人会提供 reset。
 
-> **开发中的 alpha——目前不应公开发布，也不应启用真实自动发帖。**X 目前的
+> **公开开发中的 alpha——源码可供审查，但不代表认可真实自动发帖。**X 目前的
 > Automation Rules 禁止脚本化 X 网站；这个 Bird 衍生版本使用未公开的 web
-> GraphQL，而不是官方 X API。请阅读 [DISCLAIMER.md](DISCLAIMER.md) 和尚未完成的
-> [release blockers](docs/public-release-checklist.md#blocking-policy-and-identity-checks)。
+> GraphQL，而不是官方 X API。在独立解决 [DISCLAIMER.md](DISCLAIMER.md) 和
+> [release checklist](docs/public-release-checklist.md#live-operation-policy-blockers)
+> 中的真实运行要求前，请保持 `dry-run` 模式。
 
 [English](README.md)
 
@@ -299,10 +301,11 @@ X web requests；App Server 确认使用依赖现有 Codex 登录的本地 subpr
 本项目不会发送本地 OS notification；状态只保存在 CLI、state 和本地 redacted
 logs 中。
 
-Bird 使用未公开的 X web GraphQL endpoints。X 目前的
+Bird 使用未公开的 X web GraphQL endpoints。公开源码并不代表真实自动化获准。
+X 目前的
 [Automation Rules](https://help.x.com/en/rules-and-policies/x-automation) 禁止非 API
-方式脚本化 X 网站，因此当前实现不适合按原样公开发布或真实自动运行；免责声明不能
-消除这项冲突。
+方式脚本化 X 网站，因此当前实现不适合按原样真实自动运行；免责声明不能消除这项
+冲突。
 
 ## 免责声明（准确中文翻译）
 
