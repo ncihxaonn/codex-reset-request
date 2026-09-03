@@ -2,7 +2,6 @@ import { existsSync, readFileSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import path from 'node:path';
-// biome-ignore lint/correctness/useImportExtensions: JSON module import doesn't use .js extension.
 import defaultOverrides from './features.json' with { type: 'json' };
 
 export type FeatureOverrides = {

@@ -179,13 +179,6 @@ export function withNews<TBase extends AbstractConstructor<TwitterClientBase>>(
         errors?: Array<{ message: string; code?: number; [key: string]: any }>;
       };
 
-      // Debug: save response if BIRD_DEBUG_JSON is set
-      if (process.env.BIRD_DEBUG_JSON) {
-        const fs = await import('node:fs/promises');
-        const debugPath = process.env.BIRD_DEBUG_JSON.replace('.json', `-${tabName}.json`);
-        await fs.writeFile(debugPath, JSON.stringify(data, null, 2)).catch(() => {});
-      }
-
       if (data.errors && data.errors.length > 0) {
         throw new Error(data.errors.map((e) => e.message).join('; '));
       }

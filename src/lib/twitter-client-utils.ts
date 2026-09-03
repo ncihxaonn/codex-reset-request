@@ -1,4 +1,12 @@
-import type { GraphqlTweetResult, TweetData, TweetMedia, TwitterUser } from './twitter-client-types.js';
+import type {
+  GraphqlTweetResult,
+  TimelineEntry,
+  TimelineInstruction,
+  TimelineItemContent,
+  TweetData,
+  TweetMedia,
+  TwitterUser,
+} from './twitter-client-types.js';
 
 export function normalizeQuoteDepth(value?: number): number {
   if (value === undefined || value === null) {
@@ -506,13 +514,13 @@ export function extractMedia(result: GraphqlTweetResult | undefined): TweetMedia
 }
 
 export function unwrapTweetResult(result: GraphqlTweetResult | undefined): GraphqlTweetResult | undefined {
-  if (!result) {
-    return undefined;
+  let current = result;
+  const seen = new Set<GraphqlTweetResult>();
+  while (current?.tweet && !seen.has(current)) {
+    seen.add(current);
+    current = current.tweet;
   }
-  if (result.tweet) {
-    return result.tweet;
-  }
-  return result;
+  return current;
 }
 
 export interface MapTweetResultOptions {
@@ -528,41 +536,58 @@ export function mapTweetResult(
     typeof quoteDepthOrOptions === 'number' ? { quoteDepth: quoteDepthOrOptions } : quoteDepthOrOptions;
   const { quoteDepth, includeRaw = false } = options;
 
-  const userResult = result?.core?.user_results?.result;
+  const originalResult = result;
+  const normalizedResult = unwrapTweetResult(result);
+  const userResult = normalizedResult?.core?.user_results?.result;
   const userLegacy = userResult?.legacy;
   const userCore = userResult?.core;
   const username = userLegacy?.screen_name ?? userCore?.screen_name;
   const name = userLegacy?.name ?? userCore?.name ?? username;
   const userId = userResult?.rest_id;
-  if (!result?.rest_id || !username) {
+  if (!normalizedResult?.rest_id || !username) {
     return undefined;
   }
 
-  const text = extractTweetText(result);
+  const text = extractTweetText(normalizedResult);
   if (!text) {
     return undefined;
   }
 
   let quotedTweet: TweetData | undefined;
   if (quoteDepth > 0) {
-    const quotedResult = unwrapTweetResult(result.quoted_status_result?.result);
+    const quotedResult = unwrapTweetResult(normalizedResult.quoted_status_result?.result);
     if (quotedResult) {
       quotedTweet = mapTweetResult(quotedResult, { quoteDepth: quoteDepth - 1, includeRaw });
     }
   }
 
-  const media = extractMedia(result);
-  const article = extractArticleMetadata(result);
+  const media = extractMedia(normalizedResult);
+  const article = extractArticleMetadata(normalizedResult);
+  const hasRetweetStructure = Boolean(
+    normalizedResult.retweeted_status_result?.result ?? normalizedResult.legacy?.retweeted_status_result?.result,
+  );
+  const isRetweet = hasRetweetStructure
+    ? true
+    : normalizedResult.__typename === 'Tweet' && normalizedResult.legacy
+      ? false
+      : null;
 
   const tweetData: TweetData = {
-    id: result.rest_id,
+    id: normalizedResult.rest_id,
     text,
-    createdAt: result.legacy?.created_at,
-    replyCount: result.legacy?.reply_count,
-    retweetCount: result.legacy?.retweet_count,
-    likeCount: result.legacy?.favorite_count,
-    conversationId: result.legacy?.conversation_id_str,
-    inReplyToStatusId: result.legacy?.in_reply_to_status_id_str ?? undefined,
+    createdAt: normalizedResult.legacy?.created_at,
+    replyCount: normalizedResult.legacy?.reply_count,
+    retweetCount: normalizedResult.legacy?.retweet_count,
+    likeCount: normalizedResult.legacy?.favorite_count,
+    conversationId: normalizedResult.legacy?.conversation_id_str,
+    inReplyToStatusId: normalizedResult.legacy?.in_reply_to_status_id_str ?? undefined,
+    tweetResultTypename: normalizedResult.__typename,
+    tweetWrapperTypename:
+      originalResult !== normalizedResult && originalResult?.__typename ? originalResult.__typename : undefined,
+    isPinned: null,
+    isRetweet,
+    isReply: Boolean(normalizedResult.legacy?.in_reply_to_status_id_str),
+    isQuote: Boolean(normalizedResult.quoted_status_result?.result),
     author: {
       username,
       name: name || username,
@@ -574,7 +599,7 @@ export function mapTweetResult(
   };
 
   if (includeRaw) {
-    (tweetData as TweetData & { _raw: GraphqlTweetResult })._raw = result;
+    (tweetData as TweetData & { _raw: GraphqlTweetResult })._raw = originalResult ?? normalizedResult;
   }
 
   return tweetData;
@@ -612,58 +637,28 @@ export function findTweetInInstructions(
   return undefined;
 }
 
-export function collectTweetResultsFromEntry(entry: {
-  content?: {
-    itemContent?: {
-      tweet_results?: {
-        result?: GraphqlTweetResult;
-      };
-    };
-    item?: {
-      itemContent?: {
-        tweet_results?: {
-          result?: GraphqlTweetResult;
-        };
-      };
-    };
-    items?: Array<{
-      item?: {
-        itemContent?: {
-          tweet_results?: {
-            result?: GraphqlTweetResult;
-          };
-        };
-      };
-      itemContent?: {
-        tweet_results?: {
-          result?: GraphqlTweetResult;
-        };
-      };
-      content?: {
-        itemContent?: {
-          tweet_results?: {
-            result?: GraphqlTweetResult;
-          };
-        };
-      };
-    }>;
-  };
-}): GraphqlTweetResult[] {
-  const results: GraphqlTweetResult[] = [];
-  const pushResult = (result?: GraphqlTweetResult) => {
-    if (result?.rest_id) {
-      results.push(result);
+export interface CollectedTweetResult {
+  result: GraphqlTweetResult;
+  itemType?: string;
+}
+
+export function collectTweetResultsFromEntry(entry: TimelineEntry): CollectedTweetResult[] {
+  const results: CollectedTweetResult[] = [];
+  const pushResult = (itemContent?: TimelineItemContent) => {
+    const result = itemContent?.tweet_results?.result;
+    if (unwrapTweetResult(result)?.rest_id && result) {
+      results.push({ result, itemType: itemContent?.itemType });
     }
   };
 
   const content = entry.content;
-  pushResult(content?.itemContent?.tweet_results?.result);
-  pushResult(content?.item?.itemContent?.tweet_results?.result);
+  pushResult(content?.itemContent);
+  pushResult(content?.item?.itemContent);
 
   for (const item of content?.items ?? []) {
-    pushResult(item?.item?.itemContent?.tweet_results?.result);
-    pushResult(item?.itemContent?.tweet_results?.result);
-    pushResult(item?.content?.itemContent?.tweet_results?.result);
+    pushResult(item?.item?.itemContent);
+    pushResult(item?.itemContent);
+    pushResult(item?.content?.itemContent);
   }
 
   return results;
@@ -675,71 +670,63 @@ export interface ParseTweetsOptions {
 }
 
 export function parseTweetsFromInstructions(
-  instructions:
-    | Array<{
-        entries?: Array<{
-          content?: {
-            itemContent?: {
-              tweet_results?: {
-                result?: GraphqlTweetResult;
-              };
-            };
-            item?: {
-              itemContent?: {
-                tweet_results?: {
-                  result?: GraphqlTweetResult;
-                };
-              };
-            };
-            items?: Array<{
-              item?: {
-                itemContent?: {
-                  tweet_results?: {
-                    result?: GraphqlTweetResult;
-                  };
-                };
-              };
-              itemContent?: {
-                tweet_results?: {
-                  result?: GraphqlTweetResult;
-                };
-              };
-              content?: {
-                itemContent?: {
-                  tweet_results?: {
-                    result?: GraphqlTweetResult;
-                  };
-                };
-              };
-            }>;
-          };
-        }>;
-      }>
-    | undefined,
+  instructions: TimelineInstruction[] | undefined,
   quoteDepthOrOptions: number | ParseTweetsOptions,
 ): TweetData[] {
   const options: ParseTweetsOptions =
     typeof quoteDepthOrOptions === 'number' ? { quoteDepth: quoteDepthOrOptions } : quoteDepthOrOptions;
   const { quoteDepth, includeRaw = false } = options;
 
-  const tweets: TweetData[] = [];
-  const seen = new Set<string>();
+  const tweetsById = new Map<string, TweetData>();
+
+  const mergeEvidence = (left: boolean | null | undefined, right: boolean | null | undefined) => {
+    if (left === true || right === true) {
+      return true;
+    }
+    if (left === false || right === false) {
+      return false;
+    }
+    return null;
+  };
 
   for (const instruction of instructions ?? []) {
-    for (const entry of instruction.entries ?? []) {
-      const results = collectTweetResultsFromEntry(entry);
-      for (const result of results) {
-        const mapped = mapTweetResult(result, { quoteDepth, includeRaw });
-        if (!mapped || seen.has(mapped.id)) {
+    const entries = [...(instruction.entry ? [instruction.entry] : []), ...(instruction.entries ?? [])];
+    for (const entry of entries) {
+      const collectedResults = collectTweetResultsFromEntry(entry);
+      for (const collected of collectedResults) {
+        const mapped = mapTweetResult(collected.result, { quoteDepth, includeRaw });
+        if (!mapped) {
           continue;
         }
-        seen.add(mapped.id);
-        tweets.push(mapped);
+        mapped.sourceEntryId = entry.entryId;
+        mapped.sourceInstructionType = instruction.type;
+        mapped.sourceEntryType = entry.content?.entryType ?? collected.itemType;
+        mapped.isPinned =
+          instruction.type === 'TimelinePinEntry'
+            ? true
+            : instruction.type === 'TimelineAddEntries'
+              ? false
+              : null;
+
+        const existing = tweetsById.get(mapped.id);
+        if (!existing) {
+          tweetsById.set(mapped.id, mapped);
+          continue;
+        }
+        const mergedPinned = mergeEvidence(existing.isPinned, mapped.isPinned);
+        const mergedRetweet = mergeEvidence(existing.isRetweet, mapped.isRetweet);
+        if (mapped.isPinned === true) {
+          existing.sourceEntryId = mapped.sourceEntryId;
+          existing.sourceInstructionType = mapped.sourceInstructionType;
+          existing.sourceEntryType = mapped.sourceEntryType;
+        }
+        existing.isPinned = mergedPinned;
+        existing.isRetweet = mergedRetweet;
       }
     }
   }
 
-  return tweets;
+  return [...tweetsById.values()];
 }
 
 export function extractCursorFromInstructions(
@@ -810,7 +797,7 @@ export function parseUsersFromInstructions(
           ? (rawUserResult.user as typeof rawUserResult)
           : rawUserResult;
 
-      if (!userResult || userResult.__typename !== 'User') {
+      if (userResult?.__typename !== 'User') {
         continue;
       }
 

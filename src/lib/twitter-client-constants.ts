@@ -1,4 +1,3 @@
-// biome-ignore lint/correctness/useImportExtensions: JSON module import doesn't use .js extension.
 import queryIds from './query-ids.json' with { type: 'json' };
 
 export const TWITTER_API_BASE = 'https://x.com/i/api/graphql';

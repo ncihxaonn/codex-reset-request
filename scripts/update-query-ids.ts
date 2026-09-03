@@ -138,8 +138,11 @@ function extractOperations(
 ): void {
   for (const pattern of OPERATION_PATTERNS) {
     pattern.regex.lastIndex = 0; // reset stateful regex
-    let match: RegExpExecArray | null;
-    while ((match = pattern.regex.exec(bundleContents)) !== null) {
+    while (true) {
+      const match = pattern.regex.exec(bundleContents);
+      if (match === null) {
+        break;
+      }
       const operationName = match[pattern.operationGroup];
       const queryId = match[pattern.queryIdGroup];
       if (!operationName || !queryId) continue;

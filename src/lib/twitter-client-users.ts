@@ -218,15 +218,21 @@ export function withUsers<TBase extends AbstractConstructor<TwitterClientBase>>(
                 : (username ?? '');
 
           const userId =
-            typeof data?.user_id === 'string'
-              ? data.user_id
-              : typeof data?.user_id_str === 'string'
-                ? data.user_id_str
-                : typeof data?.user?.id_str === 'string'
-                  ? data.user.id_str
-                  : typeof data?.user?.id === 'string'
-                    ? data.user.id
-                    : null;
+            typeof data?.id_str === 'string'
+              ? data.id_str
+              : typeof data?.id === 'number'
+                ? String(data.id)
+                : typeof data?.id === 'string'
+                  ? data.id
+                  : typeof data?.user_id === 'string'
+                    ? data.user_id
+                    : typeof data?.user_id_str === 'string'
+                      ? data.user_id_str
+                      : typeof data?.user?.id_str === 'string'
+                        ? data.user.id_str
+                        : typeof data?.user?.id === 'string'
+                          ? data.user.id
+                          : null;
 
           if (username && userId) {
             this.clientUserId = userId;
@@ -272,6 +278,7 @@ export function withUsers<TBase extends AbstractConstructor<TwitterClientBase>>(
           const name = nameMatch?.[1]?.replace(/\\"/g, '"');
 
           if (username && userId) {
+            this.clientUserId = userId;
             return {
               success: true,
               user: {

@@ -86,9 +86,15 @@ export abstract class TwitterClientBase {
     return Array.from(new Set([primary, 'M1jEez78PEfVfbQLvlWMvQ', '5h0kNbk3ii97rmfY6CdgAA', 'Tp1sewRU1AsZpBWhqCZicQ']));
   }
 
-  protected async fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
-    // Prepare transaction ID before making the request
-    if (process.env.NODE_ENV !== 'test') {
+  protected async fetchWithTimeout(
+    url: string,
+    init: RequestInit,
+    immediatelyBeforeRequest?: () => Promise<void>,
+  ): Promise<Response> {
+    const prepareTransaction = async () => {
+      if (process.env.NODE_ENV === 'test') {
+        return;
+      }
       try {
         if (!this._clientTransaction) {
           this._clientTransaction = await ClientTransaction.create(await handleXMigration());
@@ -104,18 +110,40 @@ export abstract class TwitterClientBase {
       } catch {
         // Transaction ID generation failed; request may fail with 401/226
       }
-    }
+    };
 
     if (!this.timeoutMs || this.timeoutMs <= 0) {
+      await prepareTransaction();
+      await immediatelyBeforeRequest?.();
       return fetch(url, init);
     }
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
+    let timeoutId: NodeJS.Timeout | undefined;
+    const deadline = new Promise<never>((_resolve, reject) => {
+      timeoutId = setTimeout(() => {
+        controller.abort();
+        reject(new Error('Request timed out'));
+      }, this.timeoutMs);
+    });
+    void deadline.catch(() => undefined);
     try {
-      return await fetch(url, { ...init, signal: controller.signal });
+      await Promise.race([prepareTransaction(), deadline]);
+      if (immediatelyBeforeRequest) {
+        // This hook may persist a mutation marker. Never detach it on timeout:
+        // a late atomic save could otherwise overwrite newer state. Once it
+        // settles, the aborted signal below still prevents the request.
+        await immediatelyBeforeRequest();
+      }
+      if (controller.signal.aborted) {
+        throw new Error('Request timed out');
+      }
+      const request = fetch(url, { ...init, signal: controller.signal });
+      return await Promise.race([request, deadline]);
     } finally {
-      clearTimeout(timeoutId);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     }
   }
 

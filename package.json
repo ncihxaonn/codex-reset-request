@@ -1,37 +1,69 @@
 {
-  "name": "@steipete/bird",
-  "version": "0.9.0",
-  "description": "CLI tool for tweeting and replying via Twitter/X GraphQL API",
+  "name": "codex-reset-request",
+  "version": "0.1.0-alpha.0",
+  "description": "Event-driven Codex usage limits and rate-limit monitor with an optional guarded Bird-powered X reset request.",
+  "private": true,
   "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "license": "MIT",
+  "keywords": [
+    "codex",
+    "codex-cli",
+    "openai-codex",
+    "codex-usage-limits",
+    "codex-rate-limit",
+    "usage-limit-monitor",
+    "rate-limit-monitor",
+    "event-driven",
+    "bird",
+    "x-automation"
+  ],
+  "homepage": "https://github.com/ncihxaonn/codex-reset-request#readme",
+  "bugs": {
+    "url": "https://github.com/ncihxaonn/codex-reset-request/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ncihxaonn/codex-reset-request.git"
+  },
+  "main": "dist/lib/index.js",
+  "types": "dist/lib/index.d.ts",
   "bin": {
-    "bird": "dist/cli.js"
+    "bird": "dist/cli.js",
+    "codex-reset-request": "dist/reset/cli.js"
   },
   "files": [
     "dist",
     "README.md",
     "CHANGELOG.md",
-    "LICENSE"
+    "LICENSE",
+    "DISCLAIMER.md",
+    "UPSTREAM.md",
+    "THIRD_PARTY_NOTICES.md"
   ],
   "scripts": {
-    "build": "pnpm run build:dist && pnpm run build:binary",
-    "build:dist": "tsc && node scripts/copy-dist-assets.js",
-    "build:binary": "BIRD_VERSION=$(node -p \"require('./package.json').version\") BIRD_GIT_SHA=$(git rev-parse --short=8 HEAD 2>/dev/null || true) bun build --compile --minify --env=BIRD_* src/cli.ts --outfile bird",
-    "dev": "tsx src/index.ts",
+    "build": "pnpm run build:dist",
+    "build:dist": "node scripts/build-dist.js",
+    "build:binary": "node --import tsx scripts/build-binary.ts",
+    "dev": "tsx src/cli.ts",
     "bird": "pnpm run build:dist && node dist/cli.js",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:live": "pnpm run build:dist && BIRD_LIVE=1 vitest run --no-file-parallelism tests/live/live.test.ts",
-    "test:live:all": "pnpm run build:dist && BIRD_LIVE=1 vitest run --no-file-parallelism tests/live/live-all.test.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.oxlint.json",
+    "test:x-read": "pnpm run build:dist && node dist/reset/cli.js test x-read",
     "lint": "pnpm run lint:biome && pnpm run lint:oxlint",
-    "lint:biome": "biome check .",
-    "lint:oxlint": "oxlint --type-aware --tsconfig tsconfig.oxlint.json --import-plugin --node-plugin --vitest-plugin --deny-warnings src tests scripts",
+    "lint:biome": "biome lint src tests scripts",
+    "lint:oxlint": "oxlint --import-plugin --node-plugin --vitest-plugin -A vitest/no-conditional-expect -A vitest/require-mock-type-parameters -A vitest/require-to-throw-message --deny-warnings src tests scripts",
     "lint:fix": "pnpm run lint:biome:fix && pnpm run lint:oxlint:fix",
-    "lint:biome:fix": "biome check --write .",
-    "lint:oxlint:fix": "oxlint --type-aware --tsconfig tsconfig.oxlint.json --import-plugin --node-plugin --vitest-plugin --deny-warnings --fix src tests scripts",
-    "format": "biome format --write .",
+    "lint:biome:fix": "biome lint --write src tests scripts",
+    "lint:oxlint:fix": "oxlint --import-plugin --node-plugin --vitest-plugin -A vitest/no-conditional-expect -A vitest/require-mock-type-parameters -A vitest/require-to-throw-message --deny-warnings --fix src tests scripts",
+    "format": "biome format --write src tests scripts",
     "binary": "pnpm run build:binary",
+    "codex:schemas": "node --import tsx scripts/generate-codex-schemas.ts",
+    "codex:schemas:check": "node --import tsx scripts/generate-codex-schemas.ts --check",
+    "verify:no-polling": "node --import tsx scripts/verify-no-polling.ts --check",
+    "verify:no-secrets": "node --import tsx scripts/verify-no-secrets.ts --check",
+    "verify:attribution": "node --import tsx scripts/verify-attribution.ts --check",
+    "verify:release": "pnpm run verify:no-polling && pnpm run verify:no-secrets && pnpm run verify:attribution",
     "graphql:update": "tsx scripts/update-query-ids.ts"
   },
   "dependencies": {
@@ -39,13 +71,10 @@
     "commander": "^14.0.2",
     "json5": "^2.2.3",
     "kleur": "^4.1.5",
-    "x-client-transaction-id": "^0.3.1"
+    "x-client-transaction-id": "^0.3.1",
+    "zod": "^4.4.3"
   },
-  "pnpm": {
-    "patchedDependencies": {
-      "@steipete/sweet-cookie": "patches/@steipete__sweet-cookie.patch"
-    }
-  },
+  "packageManager": "pnpm@11.23.0",
   "devDependencies": {
     "@biomejs/biome": "^2.3.10",
     "@types/node": "^25.0.3",

@@ -13,13 +13,13 @@ export function registerCheckCommand(program: Command, ctx: CliContext): void {
       console.log('─'.repeat(40));
 
       if (cookies.authToken) {
-        console.log(`${ctx.p('ok')}auth_token: ${cookies.authToken.slice(0, 10)}...`);
+        console.log(`${ctx.p('ok')}auth_token: available (value hidden)`);
       } else {
         console.log(`${ctx.p('err')}auth_token: not found`);
       }
 
       if (cookies.ct0) {
-        console.log(`${ctx.p('ok')}ct0: ${cookies.ct0.slice(0, 10)}...`);
+        console.log(`${ctx.p('ok')}ct0: available (value hidden)`);
       } else {
         console.log(`${ctx.p('err')}ct0: not found`);
       }

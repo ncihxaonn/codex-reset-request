@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Private security or conduct report
+    url: https://github.com/ncihxaonn/codex-reset-request/security/advisories/new
+    about: Use the private reporting route; never disclose credentials or sensitive evidence publicly.
